@@ -8,6 +8,7 @@ const sharp = require('sharp');
 const app = express();
 const PORT = 9740;
 const HOST = '0.0.0.0';
+const upload = multer();
 
 let model;
 
@@ -24,8 +25,6 @@ nsfwjs.load("https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/
 app.get('/', (req, res) => {
   res.redirect('https://akeno.randydev.my.id');
 });
-
-const upload = multer();
 
 app.post('/nsfw', upload.single('file'), async (req, res) => {
     try {
