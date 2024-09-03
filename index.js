@@ -4,9 +4,10 @@ const nsfwjs = require('nsfwjs');
 const multer = require('multer');
 const tf = require('@tensorflow/tfjs-node');
 const sharp = require('sharp');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage() });
 const PORT = 9740;
 const HOST = '0.0.0.0';
 
@@ -21,12 +22,10 @@ nsfwjs.load("https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/
     console.error('Error loading model:', error);
   });
 
-// Redirect root path to GitHub
 app.get('/', (req, res) => {
   res.redirect('https://akeno.randydev.my.id');
 });
 
-// NSFW classification endpoint
 app.get('/nsfw', async (req, res) => {
   try {
     const { url } = req.query;
@@ -72,30 +71,32 @@ app.get('/nsfw', async (req, res) => {
   }
 });
 
-app.post('/nsfw-image', upload.single('file'), async (req, res) => {
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const imageUpload = multer({ storage: storage }).single('image');
+
+app.post('/nsfw-image', imageUpload, async (req, res) => {
   try {
-    console.log('File received:', req.file);
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded.' });
     }
-    const imageBuffer = req.file.buffer;
-    console.log('Image buffer received:', imageBuffer);
-    if (imageBuffer.length === 0) {
-      return res.status(400).json({ message: 'Empty file received.' });
-    }
-    const jpgBuffer = await sharp(imageBuffer)
-      .resize({ width: 299, height: 299 })
-      .toFormat('jpeg')
-      .toBuffer();
-    console.log('Image resized and converted to JPEG');
-    const imageTensor = tf.node.decodeImage(jpgBuffer);
-    console.log('Image tensor created');
+    const imagePath = path.join(__dirname, 'uploads', req.file.filename);
+    const imageBuffer = fs.readFileSync(imagePath);
+    const imageTensor = tf.node.decodeImage(imageBuffer);
     const predictions = await model.classify(imageTensor);
-    console.log('Predictions:', predictions);
     const formattedPredictions = predictions.reduce((acc, { className, probability }) => {
       acc[className] = probability;
       return acc;
     }, {});
+    fs.unlinkSync(imagePath);
     res.json(formattedPredictions);
   } catch (error) {
     console.error('Error processing image:', error);
