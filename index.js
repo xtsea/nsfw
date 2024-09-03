@@ -74,9 +74,21 @@ app.get('/nsfw', async (req, res) => {
 
 app.post('/nsfw-image', upload.single('file'), async (req, res) => {
   try {
+    console.log('File received');
     const imageBuffer = req.file.buffer;
-    const imageTensor = tf.node.decodeImage(imageBuffer);
+    console.log('Image buffer received:', imageBuffer);
+    if (!imageBuffer) {
+      throw new Error('No image buffer found');
+    }
+    const jpgBuffer = await sharp(imageBuffer)
+      .resize({ width: 299, height: 299 })
+      .toFormat('jpeg')
+      .toBuffer();
+    console.log('Image resized and converted to JPEG');
+    const imageTensor = tf.node.decodeImage(jpgBuffer);
+    console.log('Image tensor created');
     const predictions = await model.classify(imageTensor);
+    console.log('Predictions:', predictions);
     const formattedPredictions = predictions.reduce((acc, { className, probability }) => {
       acc[className] = probability;
       return acc;
@@ -89,9 +101,8 @@ app.post('/nsfw-image', upload.single('file'), async (req, res) => {
 });
 
 
-// Handle 404 for any other paths
 app.use((req, res) => {
-  res.sendStatus(404); // 直接返回 404 响应
+  res.sendStatus(404);
 });
 
 app.listen(PORT, HOST, () => {
