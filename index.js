@@ -6,7 +6,7 @@ const tf = require('@tensorflow/tfjs-node');
 const sharp = require('sharp');
 
 const app = express();
-const upload = multer();
+const upload = multer({ storage: multer.memoryStorage() });
 const PORT = 9740;
 const HOST = '0.0.0.0';
 
@@ -74,11 +74,14 @@ app.get('/nsfw', async (req, res) => {
 
 app.post('/nsfw-image', upload.single('file'), async (req, res) => {
   try {
-    console.log('File received');
+    console.log('File received:', req.file);
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
     const imageBuffer = req.file.buffer;
     console.log('Image buffer received:', imageBuffer);
-    if (!imageBuffer) {
-      throw new Error('No image buffer found');
+    if (imageBuffer.length === 0) {
+      return res.status(400).json({ message: 'Empty file received.' });
     }
     const jpgBuffer = await sharp(imageBuffer)
       .resize({ width: 299, height: 299 })
@@ -99,7 +102,6 @@ app.post('/nsfw-image', upload.single('file'), async (req, res) => {
     res.status(500).json({ message: 'Internal server error.', details: error.message });
   }
 });
-
 
 app.use((req, res) => {
   res.sendStatus(404);
