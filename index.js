@@ -21,7 +21,7 @@ nsfwjs.load("https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/
 
 // Redirect root path to GitHub
 app.get('/', (req, res) => {
-  res.redirect('https://github.com/0-RTT/nsfw');
+  res.redirect('https://akeno.randydev.my.id');
 });
 
 // NSFW classification endpoint
