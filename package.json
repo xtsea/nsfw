@@ -11,7 +11,8 @@
     "axios": "latest",
     "nsfwjs": "latest",
     "@tensorflow/tfjs-node": "latest",
-    "sharp": "latest"
+    "sharp": "latest",
+    "multer": "latest"
   },
   "engines": {
     "node": ">=12.0.0"
