@@ -6,7 +6,7 @@ const sharp = require('sharp');
 
 const app = express();
 const PORT = 9740;
-const HOST = '127.0.0.1';
+const HOST = '0.0.0.0';
 
 let model;
 
