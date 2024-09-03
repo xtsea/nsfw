@@ -8,7 +8,6 @@ const sharp = require('sharp');
 const app = express();
 const PORT = 9740;
 const HOST = '0.0.0.0';
-const upload = multer();
 
 let model;
 
@@ -21,15 +20,19 @@ nsfwjs.load("https://raw.githubusercontent.com/infinitered/nsfwjs/master/models/
     console.error('Error loading model:', error);
   });
 
-// Redirect root path to GitHub
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 app.get('/', (req, res) => {
   res.redirect('https://akeno.randydev.my.id');
 });
 
+const upload = multer();
+
 app.post('/nsfw', upload.single('file'), async (req, res) => {
     try {
         let imageBuffer;
-      
+
         if (req.file) {
             imageBuffer = req.file.buffer;
         } else if (req.body.url) {
@@ -41,7 +44,7 @@ app.post('/nsfw', upload.single('file'), async (req, res) => {
 
         let imageTensor;
 
-        if (req.file && req.file.mimetype === 'image/gif' || req.body.url.endsWith('.gif')) {
+        if ((req.file && req.file.mimetype === 'image/gif') || req.body.url.endsWith('.gif')) {
             const jpgBuffer = await sharp(imageBuffer)
                 .resize({ width: 299, height: 299 })
                 .toFormat('jpeg')
@@ -74,9 +77,8 @@ app.post('/nsfw', upload.single('file'), async (req, res) => {
     }
 });
 
-// Handle 404 for any other paths
 app.use((req, res) => {
-  res.sendStatus(404); // 直接返回 404 响应
+  res.sendStatus(404);
 });
 
 app.listen(PORT, HOST, () => {
