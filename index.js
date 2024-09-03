@@ -1,10 +1,12 @@
 const express = require('express');
 const axios = require('axios');
 const nsfwjs = require('nsfwjs');
+const multer = require('multer');
 const tf = require('@tensorflow/tfjs-node');
 const sharp = require('sharp');
 
 const app = express();
+const upload = multer();
 const PORT = 9740;
 const HOST = '0.0.0.0';
 
@@ -69,6 +71,23 @@ app.get('/nsfw', async (req, res) => {
     }
   }
 });
+
+app.post('/nsfw-image', upload.single('file'), async (req, res) => {
+  try {
+    const imageBuffer = req.file.buffer;
+    const imageTensor = tf.node.decodeImage(imageBuffer);
+    const predictions = await model.classify(imageTensor);
+    const formattedPredictions = predictions.reduce((acc, { className, probability }) => {
+      acc[className] = probability;
+      return acc;
+    }, {});
+    res.json(formattedPredictions);
+  } catch (error) {
+    console.error('Error processing image:', error);
+    res.status(500).json({ message: 'Internal server error.', details: error.message });
+  }
+});
+
 
 // Handle 404 for any other paths
 app.use((req, res) => {
